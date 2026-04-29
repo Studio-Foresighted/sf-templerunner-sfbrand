@@ -1,5 +1,5 @@
 {
-  "name": "artworx-runner",
+  "name": "studio-foresighted-runner",
   "private": true,
   "version": "1.0.0",
   "scripts": {
@@ -8,8 +8,6 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.0",
-    "@types/jsonwebtoken": "^8.5.8",
     "@types/three": "^0.182.0",
     "@types/toastify-js": "^1.11.1",
     "@typescript-eslint/eslint-plugin": "^5.30.7",
@@ -23,11 +21,7 @@
   "dependencies": {
     "@tweenjs/tween.js": "^25.0.0",
     "@types/node": "^25.0.2",
-    "bcrypt": "^5.0.1",
-    "dotenv": "^16.0.1",
     "flag-icons": "^6.6.4",
-    "jsonwebtoken": "^8.5.1",
-    "mysql2": "^2.3.3",
     "three": "^0.182.0",
     "toastify-js": "^1.12.0"
   }

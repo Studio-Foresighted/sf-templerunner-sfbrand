@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import Toastify from 'toastify-js';
 import * as TWEEN from '@tweenjs/tween.js';
 import allCharacters from '../allCharacters';
+import { getCachedJson, loadCachedFbx, loadCachedGltf, loadCachedTexture } from '../assetCache';
 
 import { IallGameCharacters } from '../types';
 
@@ -88,6 +89,8 @@ export default class RunningScene extends Scene {
   private activeCoinsGroup = new Group();
 
   private coinBox = new Box3(new Vector3(), new Vector3());
+
+  private coinSpinSpeed = 1.6;
 
   private scores = 0;
 
@@ -202,6 +205,61 @@ export default class RunningScene extends Scene {
   
   private availableGlbFiles = ['character.glb', 'run.glb', 'jump.glb', 'slide.glb', 'stumble.glb', 'D7M3GLJGZXPBHJZBUQ2G0G5N0.glb']; // Defaults from 2025 folder
 
+  private scoreEl: HTMLElement | null = null;
+
+  private coinsEl: HTMLElement | null = null;
+
+  private timerEl: HTMLElement | null = null;
+
+  private metersEl: HTMLElement | null = null;
+
+  private lastScoreText = '';
+
+  private lastCoinsText = '';
+
+  private lastTimerText = '';
+
+  private lastMetersText = '';
+
+  private cacheHudElements() {
+    this.scoreEl ??= document.querySelector('.scores-count') as HTMLElement | null;
+    this.coinsEl ??= document.querySelector('.coins-count') as HTMLElement | null;
+    this.timerEl ??= document.getElementById('timer-display');
+    this.metersEl ??= document.getElementById('meters-display');
+  }
+
+  private setScoreText(value: string) {
+    this.cacheHudElements();
+    if (this.scoreEl && this.lastScoreText !== value) {
+      this.scoreEl.innerHTML = value;
+      this.lastScoreText = value;
+    }
+  }
+
+  private setCoinsText(value: string) {
+    this.cacheHudElements();
+    if (this.coinsEl && this.lastCoinsText !== value) {
+      this.coinsEl.innerHTML = value;
+      this.lastCoinsText = value;
+    }
+  }
+
+  private setTimerText(value: string) {
+    this.cacheHudElements();
+    if (this.timerEl && this.lastTimerText !== value) {
+      this.timerEl.innerText = value;
+      this.lastTimerText = value;
+    }
+  }
+
+  private setMetersText(value: string) {
+    this.cacheHudElements();
+    if (this.metersEl && this.lastMetersText !== value) {
+      this.metersEl.innerText = value;
+      this.lastMetersText = value;
+    }
+  }
+
   private updateLoading(percent: number) {
     if (!this.showProgressInUI) return;
 
@@ -215,16 +273,9 @@ export default class RunningScene extends Scene {
   }
 
   private async loadCaveTexture(filename: string, repeatValue?: number) {
-    const textureLoader = new TextureLoader();
-    const texture = await textureLoader.loadAsync(`./assets/models/textures/${filename}`);
-    texture.colorSpace = SRGBColorSpace;
-    texture.wrapS = RepeatWrapping;
-    texture.wrapT = RepeatWrapping;
     const repeat = repeatValue !== undefined ? repeatValue : parseFloat(localStorage.getItem('textureRepeat') || '8');
+    const texture = await loadCachedTexture(`./assets/models/textures/${filename}`, repeat);
     console.log(`🎨 Loading texture "${filename}" with repeat: ${repeat} (passed: ${repeatValue})`);
-    texture.repeat.set(repeat, repeat);
-    texture.anisotropy = 16;
-    texture.needsUpdate = true;
     return texture;
   }
 
@@ -257,6 +308,7 @@ export default class RunningScene extends Scene {
 
     this.loadingPromise = (async () => {
     this.updateLoading(5);
+    this.background = await loadCachedTexture('./assets/mainbackdrop.png', 1);
 
     const cleanAnim = (group: any) => {
       if (group.animations && group.animations.length) {
@@ -300,16 +352,15 @@ export default class RunningScene extends Scene {
     // Load selected or default texture from JSON
     let selectedTexture = localStorage.getItem('selectedCaveTexture');
     if (!selectedTexture) {
-      const response = await fetch('./assets/models/textures/textures.json');
-      const data = await response.json();
+      const data = await getCachedJson<any>('./assets/models/textures/textures.json');
       const defaultTex = data.textures.find((t: any) => t.default);
-      selectedTexture = defaultTex ? defaultTex.file : 'cyberpunk-metal-3.jpeg';
+      selectedTexture = defaultTex ? defaultTex.file : 'cyberpunk-metal-2.jpeg';
     }
     const textureRepeat = parseFloat(localStorage.getItem('textureRepeat') || '8');
     const caveTexture = await this.loadCaveTexture(selectedTexture!);
     this.caveTexture = caveTexture;
 
-    this.woodenCave = await this.fbxLoader.loadAsync('./assets/models/wooden-cave.fbx');
+    this.woodenCave = await loadCachedFbx('./assets/models/wooden-cave.fbx');
     
     this.woodenCave.traverse((child: any) => {
       if (child.isMesh) {
@@ -458,9 +509,8 @@ export default class RunningScene extends Scene {
     
     // Load and populate texture dropdown
     if (textureSelector) {
-      fetch('./assets/models/textures/textures.json')
-        .then(res => res.json())
-        .then(data => {
+      getCachedJson<any>('./assets/models/textures/textures.json')
+        .then((data) => {
           let selectedTexture = localStorage.getItem('selectedCaveTexture');
           if (!selectedTexture) {
             // Default to Cyberpunk Metal 2
@@ -604,7 +654,7 @@ export default class RunningScene extends Scene {
     // Load character model
     if (activeChar.isGlb) {
       console.log('🎮 Loading GLB character:', activeChar.name);
-      const gltf = await this.glbLoader.loadAsync(activeChar.model);
+      const gltf = await loadCachedGltf(activeChar.model);
       
       // Create a wrapper for the character so we can rotate the model independently of the hitbox
       const wrapper = new Object3D();
@@ -854,72 +904,72 @@ export default class RunningScene extends Scene {
       this.xbotStumbleAnimation = stumbleAnimWrapper as any;
     } else {
       console.log('🎮 Loading FBX character:', activeChar.name);
-      this.xbot = await this.fbxLoader.loadAsync(activeChar.model);
+      this.xbot = await loadCachedFbx(activeChar.model);
       this.updateLoading(13);
 
-      this.xbotRunningAnimation = await this.fbxLoader.loadAsync(activeChar.runAnimation);
+      this.xbotRunningAnimation = await loadCachedFbx(activeChar.runAnimation);
       cleanAnim(this.xbotRunningAnimation);
       this.updateLoading(14);
 
-      this.xbotJumpingAnimation = await this.fbxLoader.loadAsync(activeChar.jumpAnimation);
+      this.xbotJumpingAnimation = await loadCachedFbx(activeChar.jumpAnimation);
       cleanAnim(this.xbotJumpingAnimation);
       this.updateLoading(15);
 
-      this.xbotSlidingAnimation = await this.fbxLoader.loadAsync(activeChar.slideAnimation);
+      this.xbotSlidingAnimation = await loadCachedFbx(activeChar.slideAnimation);
       cleanAnim(this.xbotSlidingAnimation);
       this.updateLoading(16);
 
-      this.xbotStumbleAnimation = await this.fbxLoader.loadAsync(activeChar.stumbleAnimation);
+      this.xbotStumbleAnimation = await loadCachedFbx(activeChar.stumbleAnimation);
     }
     cleanAnim(this.xbotStumbleAnimation);
 
     this.updateLoading(17);
 
     // [2]=Jolleen, [3]=Peasant Girl (Flash is [0], Xbot is [1])
-    this.jolleen = await this.fbxLoader.loadAsync(this.allGameCharacters[2].model);
-    this.jolleenRunningAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[2]
+    this.jolleen = await loadCachedFbx(this.allGameCharacters[2].model);
+    this.jolleenRunningAnimation = await loadCachedFbx(this.allGameCharacters[2]
       .runAnimation);
     cleanAnim(this.jolleenRunningAnimation);
 
     this.updateLoading(18);
 
-    this.jolleenJumpingAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[2]
+    this.jolleenJumpingAnimation = await loadCachedFbx(this.allGameCharacters[2]
       .jumpAnimation);
     cleanAnim(this.jolleenJumpingAnimation);
 
     this.updateLoading(85);
 
-    this.jolleenSlidingAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[2]
+    this.jolleenSlidingAnimation = await loadCachedFbx(this.allGameCharacters[2]
       .slideAnimation);
     cleanAnim(this.jolleenSlidingAnimation);
 
     this.updateLoading(90);
 
-    this.jolleenStumbleAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[2]
+    this.jolleenStumbleAnimation = await loadCachedFbx(this.allGameCharacters[2]
       .stumbleAnimation);
     cleanAnim(this.jolleenStumbleAnimation);
 
     this.updateLoading(95);
 
-    this.peasantGirl = await this.fbxLoader.loadAsync(this.allGameCharacters[3].model);
-    this.peasantGirlRunningAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[3]
+    this.peasantGirl = await loadCachedFbx(this.allGameCharacters[3].model);
+    this.peasantGirlRunningAnimation = await loadCachedFbx(this.allGameCharacters[3]
       .runAnimation);
     cleanAnim(this.peasantGirlRunningAnimation);
     this.updateLoading(98);
 
-    this.peasantGirlJumpingAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[3]
+    this.peasantGirlJumpingAnimation = await loadCachedFbx(this.allGameCharacters[3]
       .jumpAnimation);
     cleanAnim(this.peasantGirlJumpingAnimation);
 
     this.updateLoading(99);
 
-    this.peasantGirlSlidingAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[3]
+    this.peasantGirlSlidingAnimation = await loadCachedFbx(this.allGameCharacters[3]
       .slideAnimation);
     cleanAnim(this.peasantGirlSlidingAnimation);
 
     this.updateLoading(100);
 
-    this.peasantGirlStumbleAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[3]
+    this.peasantGirlStumbleAnimation = await loadCachedFbx(this.allGameCharacters[3]
       .stumbleAnimation);
     cleanAnim(this.peasantGirlStumbleAnimation);
     this.updateLoading(100);
@@ -1416,8 +1466,9 @@ export default class RunningScene extends Scene {
     const extraInfo = document.querySelector('.hud-extra-info') as HTMLElement;
     if (extraInfo) extraInfo.style.display = 'flex';
 
-    (document.querySelector('.scores-count') as HTMLInputElement).innerHTML = '0';
-    (document.querySelector('.coins-count') as HTMLInputElement).innerHTML = '0';
+    this.cacheHudElements();
+    this.setScoreText('0');
+    this.setCoinsText('0');
 
     // (document.querySelector('.pause-button') as HTMLInputElement).style.display = 'block'; // Removed old selector
 
@@ -1619,21 +1670,19 @@ export default class RunningScene extends Scene {
     this.detectCollisionWithObstacles();
 
     this.scores += Math.round(this.speed * this.delta);
-    (document.querySelector('.scores-count') as HTMLInputElement).innerHTML = this.scores.toString();
+    this.setScoreText(this.scores.toString());
 
     // Update Timer
     this.elapsedTime += this.delta;
     const minutes = Math.floor(this.elapsedTime / 60);
     const seconds = Math.floor(this.elapsedTime % 60);
     const timeString = `TIME: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    const timerEl = document.getElementById('timer-display');
-    if (timerEl) timerEl.innerText = timeString;
+    this.setTimerText(timeString);
 
     // Update Meters (Separate from Score)
     // Assuming speed is units/sec. Let's say 10 units = 1 meter.
     this.meters += (this.speed * this.delta) / 10;
-    const metersEl = document.getElementById('meters-display');
-    if (metersEl) metersEl.innerText = `${Math.floor(this.meters)} M`;
+    this.setMetersText(`${Math.floor(this.meters)} M`);
 
     if (!this.isDemo) {
       if (this.isPlayerHeadStart) {
@@ -1738,7 +1787,7 @@ export default class RunningScene extends Scene {
     const runnerIdEl = document.getElementById('runner-id-display');
     if (runnerIdEl) runnerIdEl.innerText = runnerId;
 
-    (document.querySelector('.coins-count') as HTMLInputElement).innerHTML = '0';
+    this.setCoinsText('0');
     this.runningAnimation.reset();
     this.currentAnimation.crossFadeTo(this.runningAnimation, 0, false).play();
     this.player.rotation.x = 0;
@@ -1751,8 +1800,7 @@ export default class RunningScene extends Scene {
     this.currentLane = 0;
     
     this.meters = 0;
-    const metersEl = document.getElementById('meters-display');
-    if (metersEl) metersEl.innerText = '0 M';
+    this.setMetersText('0 M');
 
     setTimeout(() => {
       this.isPlayerHeadStart = true;
@@ -2013,19 +2061,22 @@ export default class RunningScene extends Scene {
   }
 
   private detectCollisionWithCoins() {
+    let collected = 0;
+
     for (let i = 0; i < this.activeCoinsGroup.children.length; i += 1) {
-      this.coinBox.setFromObject(this.activeCoinsGroup.children[i]);
+      const coin = this.activeCoinsGroup.children[i];
+      if (!coin.visible) continue;
+
+      this.coinBox.setFromObject(coin);
       if (this.playerBoxCollider.intersectsBox(this.coinBox)) {
-        this.activeCoinsGroup.children[i].visible = false;
-        this.activeCoinsGroup.children[i].position.z += 70;
-        if (!this.isGamePaused && !this.isGameOver) {
-          this.coins += 1;
-        }
-        (document.querySelector('.coins-count') as HTMLInputElement).innerHTML = `${this.coins}`;
-        setTimeout(() => {
-          this.activeCoinsGroup.children[i].position.z -= 70;
-        }, 100);
+        coin.visible = false;
+        collected += 1;
       }
+    }
+
+    if (collected > 0 && !this.isGamePaused && !this.isGameOver) {
+      this.coins += collected;
+      this.setCoinsText(`${this.coins}`);
     }
   }
 
@@ -2037,6 +2088,12 @@ export default class RunningScene extends Scene {
   private spawnCoin() {
     if (!this.activeCoinsGroup.visible) {
       this.activeCoinsGroup.visible = true;
+    }
+
+    for (let i = 0; i < this.activeCoinsGroup.children.length; i += 1) {
+      const coin = this.activeCoinsGroup.children[i];
+      if (!coin.visible) continue;
+      coin.rotateY(this.coinSpinSpeed * this.delta);
     }
 
     this.activeCoinsGroup.position.z += 0.8 * this.speed * this.delta;

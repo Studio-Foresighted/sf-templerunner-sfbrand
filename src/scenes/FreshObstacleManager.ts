@@ -20,6 +20,16 @@ export class FreshObstacleManager {
     private coinSpawnTimer = 0;
     private coinSpawnInterval = 1.5;
 
+    private coinSpinSpeed = 1.6;
+
+    private obstacleCollisionBox = new Box3();
+
+    private coinCollisionBox = new Box3();
+
+    private readonly collisionRearBuffer = 40;
+
+    private readonly collisionFrontBuffer = 140;
+
     constructor(scene: Object3D) {
         this.scene = scene;
     }
@@ -480,6 +490,12 @@ export class FreshObstacleManager {
             // Move Coins
             for (let i = this.activeCoins.length - 1; i >= 0; i--) {
                 const c = this.activeCoins[i];
+                for (let childIndex = 0; childIndex < c.children.length; childIndex += 1) {
+                    const child = c.children[childIndex];
+                    if (!child.visible) continue;
+                    child.rotateZ(this.coinSpinSpeed * delta);
+                }
+
                 c.position.z += speed * delta;
                 if (c.position.z > 50) {
                     c.visible = false;
@@ -525,39 +541,45 @@ export class FreshObstacleManager {
     
     checkCollisions(playerBox: Box3, isInvulnerable: boolean): boolean {
         if (isInvulnerable) return false;
+        const minZ = playerBox.min.z - this.collisionRearBuffer;
+        const maxZ = playerBox.max.z + this.collisionFrontBuffer;
         
-        const obstacleBox = new Box3();
-        
-        for (const obs of this.activeObstacles) {
-            let hit = false;
-            obs.traverse((child: any) => {
-                if (hit) return;
-                if (child.name === 'hitbox') {
-                    obstacleBox.setFromObject(child);
-                    if (playerBox.intersectsBox(obstacleBox)) {
-                        hit = true;
-                    }
+        for (let groupIndex = 0; groupIndex < this.activeObstacles.length; groupIndex += 1) {
+            const obs = this.activeObstacles[groupIndex];
+            if (obs.position.z < minZ || obs.position.z > maxZ) continue;
+
+            for (let childIndex = 0; childIndex < obs.children.length; childIndex += 1) {
+                const child = obs.children[childIndex] as any;
+                if (child.name !== 'hitbox') continue;
+
+                this.obstacleCollisionBox.setFromObject(child);
+                if (playerBox.intersectsBox(this.obstacleCollisionBox)) {
+                    return true;
                 }
-            });
-            if (hit) return true;
+            }
         }
         return false;
     }
 
     checkCoinCollisions(playerBox: Box3): number {
         let collected = 0;
-        const coinBox = new Box3();
+        const minZ = playerBox.min.z - this.collisionRearBuffer;
+        const maxZ = playerBox.max.z + this.collisionFrontBuffer;
 
-        for (const group of this.activeCoins) {
-            group.traverse((child: any) => {
-                if (child.visible && child.isMesh) { // Only check visible meshes
-                    coinBox.setFromObject(child);
-                    if (playerBox.intersectsBox(coinBox)) {
-                        child.visible = false; // Hide collected coin
-                        collected++;
-                    }
+        for (let groupIndex = 0; groupIndex < this.activeCoins.length; groupIndex += 1) {
+            const group = this.activeCoins[groupIndex];
+            if (group.position.z < minZ || group.position.z > maxZ) continue;
+
+            for (let childIndex = 0; childIndex < group.children.length; childIndex += 1) {
+                const child = group.children[childIndex] as any;
+                if (!child.visible) continue;
+
+                this.coinCollisionBox.setFromObject(child);
+                if (playerBox.intersectsBox(this.coinCollisionBox)) {
+                    child.visible = false;
+                    collected += 1;
                 }
-            });
+            }
         }
         return collected;
     }

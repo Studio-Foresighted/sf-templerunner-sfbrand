@@ -3,6 +3,19 @@ import fs from 'fs';
 import path from 'path';
 
 export default defineConfig({
+  build: {
+    target: 'es2022',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) return 'vendor-three';
+          if (id.includes('node_modules/@tweenjs')) return 'vendor-tween';
+          return undefined;
+        },
+      },
+    },
+  },
   plugins: [
     {
       name: 'configure-server',

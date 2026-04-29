@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import Toastify from 'toastify-js';
 
 import allCharacters from '../allCharacters';
+import { getCachedJson, loadCachedFbx, loadCachedGltf, loadCachedTexture } from '../assetCache';
 
 import 'flag-icons';
 
@@ -82,16 +83,9 @@ export default class MainMenuScene extends Scene {
 
 
   private async loadCaveTexture(filename: string, repeatValue?: number) {
-    const textureLoader = new TextureLoader();
-    const texture = await textureLoader.loadAsync(`./assets/models/textures/${filename}`);
-    texture.colorSpace = SRGBColorSpace;
-    texture.wrapS = RepeatWrapping;
-    texture.wrapT = RepeatWrapping;
     const repeat = repeatValue !== undefined ? repeatValue : parseFloat(localStorage.getItem('textureRepeat') || '22.5');
+    const texture = await loadCachedTexture(`./assets/models/textures/${filename}`, repeat);
     console.log(`🎨 [MainMenu] Loading texture "${filename}" with repeat: ${repeat} (passed: ${repeatValue})`);
-    texture.repeat.set(repeat, repeat);
-    texture.anisotropy = 16;
-    texture.needsUpdate = true;
     return texture;
   }
 
@@ -114,7 +108,7 @@ export default class MainMenuScene extends Scene {
     
     container.innerHTML = ''; // Clear existing
     
-    const currentTexture = localStorage.getItem('selectedCaveTexture') || 'cyberpunk-metal-3.jpeg';
+    const currentTexture = localStorage.getItem('selectedCaveTexture') || 'cyberpunk-metal-2.jpeg';
     
     textures.forEach(tex => {
         const thumb = document.createElement('div');
@@ -140,21 +134,22 @@ export default class MainMenuScene extends Scene {
 
   async load() {
     this.updateLoading(5, 'INITIALIZING CORE');
+    this.background = await loadCachedTexture('./assets/mainbackdrop.png', 1);
+
     // Fetch textures for UI and selection
-    const response = await fetch('./assets/models/textures/textures.json');
-    const data = await response.json();
+    const data = await getCachedJson<any>('./assets/models/textures/textures.json');
     this.renderTextureThumbnails(data.textures);
 
     let selectedTexture = localStorage.getItem('selectedCaveTexture');
     if (!selectedTexture) {
       const defaultTex = data.textures.find((t: any) => t.default);
-      selectedTexture = defaultTex ? defaultTex.file : 'cyberpunk-metal-3.jpeg';
+      selectedTexture = defaultTex ? defaultTex.file : 'cyberpunk-metal-2.jpeg';
     }
     const caveTexture = await this.loadCaveTexture(selectedTexture!);
     this.caveTexture = caveTexture;
     this.updateLoading(15, 'TEXTURES LOADED');
 
-    this.woodenCave = await this.fbxLoader.loadAsync('./assets/models/wooden-cave.fbx');
+    this.woodenCave = await loadCachedFbx('./assets/models/wooden-cave.fbx');
     
     this.woodenCave.traverse((child: any) => {
       if (child.isMesh) {
@@ -179,7 +174,7 @@ export default class MainMenuScene extends Scene {
 
     // Load Sprint Animation for Intro
     try {
-        const sprintGltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-sprint-2.glb');
+      const sprintGltf = await loadCachedGltf('./assets/characters/2025/flash-sprint-2.glb');
         if (sprintGltf.animations.length > 0) {
             this.sprintClip = sprintGltf.animations[0];
             console.log('🏃 [MainMenu] Loaded Sprint Animation');
@@ -190,7 +185,7 @@ export default class MainMenuScene extends Scene {
 
     // Load Warmup Animation for Intro
     try {
-        const warmGltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-warm.glb');
+      const warmGltf = await loadCachedGltf('./assets/characters/2025/flash-warm.glb');
         if (warmGltf.animations.length > 0) {
             this.warmupClip = warmGltf.animations[0];
             console.log('🔥 [MainMenu] Loaded Warmup Animation');
@@ -218,7 +213,7 @@ export default class MainMenuScene extends Scene {
     console.log('🎮 [MainMenu] Loading Flash Idles (2025)...');
     
     // Force load the specific GLB
-    const gltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-idles.glb');
+    const gltf = await loadCachedGltf('./assets/characters/2025/flash-idles.glb');
     this.xbot = gltf.scene;
     
     // Store all animations for cycling
@@ -235,18 +230,16 @@ export default class MainMenuScene extends Scene {
     this.makeCharacterUnlit();
     
     // Load other characters: [1]=Xbot, [2]=Jolleen, [3]=Peasant Girl
-    this.jolleen = await this.fbxLoader.loadAsync(this.allGameCharacters[2].model);
-    this.peasantGirl = await this.fbxLoader.loadAsync(this.allGameCharacters[3].model);
+    this.jolleen = await loadCachedFbx(this.allGameCharacters[2].model);
+    this.peasantGirl = await loadCachedFbx(this.allGameCharacters[3].model);
 
     this.updateLoading(75, 'CITY MESH LOADED');
 
-    this.jolleenAnimation = await this.fbxLoader
-      .loadAsync(this.allGameCharacters[2].danceAnimation);
+    this.jolleenAnimation = await loadCachedFbx(this.allGameCharacters[2].danceAnimation);
 
     this.updateLoading(85, 'AUDIO SYSTEMS ONLINE');
 
-    this.peasantGirlAnimation = await this.fbxLoader
-      .loadAsync(this.allGameCharacters[3].danceAnimation);
+    this.peasantGirlAnimation = await loadCachedFbx(this.allGameCharacters[3].danceAnimation);
 
     this.updateLoading(95, 'READY TO RUN');
 

@@ -7,6 +7,7 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import Toastify from 'toastify-js';
 
 import allCharacters from '../allCharacters';
+import { loadCachedFbx } from '../assetCache';
 
 import { IallGameCharacters } from '../types';
 
@@ -64,7 +65,7 @@ export default class CharacterSelectionScene extends Scene {
     if (this.loadingPromise) return this.loadingPromise;
 
     this.loadingPromise = (async () => {
-    this.woodenCave = await this.fbxLoader.loadAsync('./assets/models/wooden-cave.fbx');
+    this.woodenCave = await loadCachedFbx('./assets/models/wooden-cave.fbx');
     this.woodenCave.position.set(0, 0, -500);
     this.woodenCave.scale.set(0.055, 0.055, 0.055);
     this.add(this.woodenCave);
@@ -86,24 +87,24 @@ export default class CharacterSelectionScene extends Scene {
     this.allGameCharacters = (JSON.parse(localStorage.getItem('allGameCharacters') !));
 
     // [1]=Xbot, [2]=Jolleen, [3]=Peasant Girl (Flash is [0])
-    this.xbot = await this.fbxLoader.loadAsync(this.allGameCharacters[1].model);
+    this.xbot = await loadCachedFbx(this.allGameCharacters[1].model);
     this.updateLoading(60);
 
-    this.jolleen = await this.fbxLoader.loadAsync(this.allGameCharacters[2].model);
+    this.jolleen = await loadCachedFbx(this.allGameCharacters[2].model);
 
     this.updateLoading(70);
 
-    this.peasantGirl = await this.fbxLoader.loadAsync(this.allGameCharacters[3].model);
+    this.peasantGirl = await loadCachedFbx(this.allGameCharacters[3].model);
 
     this.updateLoading(80);
 
-    this.xbotAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[1].danceAnimation);
+    this.xbotAnimation = await loadCachedFbx(this.allGameCharacters[1].danceAnimation);
 
     this.updateLoading(90);
-    this.jolleenAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[2]
+    this.jolleenAnimation = await loadCachedFbx(this.allGameCharacters[2]
       .danceAnimation);
 
-    this.peasantGirlAnimation = await this.fbxLoader.loadAsync(this.allGameCharacters[3]
+    this.peasantGirlAnimation = await loadCachedFbx(this.allGameCharacters[3]
       .danceAnimation);
 
     this.updateLoading(100);

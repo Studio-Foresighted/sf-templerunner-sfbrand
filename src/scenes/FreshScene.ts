@@ -8,6 +8,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 import allCharacters from '../allCharacters';
+import { loadCachedFbx, loadCachedGltf, loadCachedTexture } from '../assetCache';
 import { IallGameCharacters } from '../types';
 import { FreshObstacleManager } from './FreshObstacleManager';
 
@@ -94,10 +95,65 @@ export default class FreshScene extends Scene {
 
   private loadingPromise: Promise<void> | null = null;
 
+    private scoreEl: HTMLElement | null = null;
+
+    private coinsEl: HTMLElement | null = null;
+
+    private timerEl: HTMLElement | null = null;
+
+    private metersEl: HTMLElement | null = null;
+
+    private lastScoreText = '';
+
+    private lastCoinsText = '';
+
+    private lastTimerText = '';
+
+    private lastMetersText = '';
+
   constructor() {
     super();
     this.obstacleManager = new FreshObstacleManager(this);
   }
+
+    private cacheHudElements() {
+        this.scoreEl ??= document.querySelector('.scores-count') as HTMLElement | null;
+        this.coinsEl ??= document.querySelector('.coins-count') as HTMLElement | null;
+        this.timerEl ??= document.getElementById('timer-display');
+        this.metersEl ??= document.getElementById('meters-display');
+    }
+
+    private setScoreText(value: string) {
+        this.cacheHudElements();
+        if (this.scoreEl && this.lastScoreText !== value) {
+            this.scoreEl.innerHTML = value;
+            this.lastScoreText = value;
+        }
+    }
+
+    private setCoinsText(value: string) {
+        this.cacheHudElements();
+        if (this.coinsEl && this.lastCoinsText !== value) {
+            this.coinsEl.innerHTML = value;
+            this.lastCoinsText = value;
+        }
+    }
+
+    private setTimerText(value: string) {
+        this.cacheHudElements();
+        if (this.timerEl && this.lastTimerText !== value) {
+            this.timerEl.innerText = value;
+            this.lastTimerText = value;
+        }
+    }
+
+    private setMetersText(value: string) {
+        this.cacheHudElements();
+        if (this.metersEl && this.lastMetersText !== value) {
+            this.metersEl.innerText = value;
+            this.lastMetersText = value;
+        }
+    }
 
   async load() {
     if (this.loaded) return;
@@ -105,6 +161,7 @@ export default class FreshScene extends Scene {
 
     this.loadingPromise = (async () => {
     this.updateLoading(5);
+    this.background = await loadCachedTexture('./assets/mainbackdrop.png', 1);
 
     // Load Obstacles
     this.obstacleManager.loadAssets(this.fbxLoader);
@@ -112,7 +169,7 @@ export default class FreshScene extends Scene {
 
     // 1. Load Environment (Cave)
     // Reuse texture logic from MainMenu or just load default
-    let selectedTexture = localStorage.getItem('selectedCaveTexture') || 'cyberpunk-metal-3.jpeg';
+    let selectedTexture = localStorage.getItem('selectedCaveTexture') || 'cyberpunk-metal-2.jpeg';
     
     // Fix for old/broken texture references
     if (selectedTexture.includes('unsplash') || selectedTexture.includes('malik')) {
@@ -121,15 +178,10 @@ export default class FreshScene extends Scene {
         localStorage.setItem('selectedCaveTexture', selectedTexture);
     }
 
-    const textureLoader = new TextureLoader();
-    const caveTexture = await textureLoader.loadAsync(`./assets/models/textures/${selectedTexture}`);
-    caveTexture.colorSpace = SRGBColorSpace;
-    caveTexture.wrapS = RepeatWrapping;
-    caveTexture.wrapT = RepeatWrapping;
     const savedRepeat = parseFloat(localStorage.getItem('textureRepeat') || '22.5');
-    caveTexture.repeat.set(savedRepeat, savedRepeat);
+    const caveTexture = await loadCachedTexture(`./assets/models/textures/${selectedTexture}`, savedRepeat);
 
-    this.woodenCave = await this.fbxLoader.loadAsync('./assets/models/wooden-cave.fbx');
+    this.woodenCave = await loadCachedFbx('./assets/models/wooden-cave.fbx');
     this.woodenCave.traverse((child: any) => {
       if (child.isMesh) {
         child.geometry.deleteAttribute('color');
@@ -170,7 +222,7 @@ export default class FreshScene extends Scene {
     console.log('✨ [FreshScene] Loading character:', char0.name);
     
     if (char0.isGlb) {
-      const gltf = await this.glbLoader.loadAsync(char0.model);
+            const gltf = await loadCachedGltf(char0.model);
       this.activeCharacter = gltf.scene;
       
       // Animation
@@ -213,7 +265,7 @@ export default class FreshScene extends Scene {
 
     // Load Sprint Animation (Preload)
     try {
-        const sprintGltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-sprint-2.glb');
+        const sprintGltf = await loadCachedGltf('./assets/characters/2025/flash-sprint-2.glb');
         if (sprintGltf.animations.length > 0) {
             this.sprintClip = sprintGltf.animations[0];
             this.sprintClip.name = 'sprint-2';
@@ -225,7 +277,7 @@ export default class FreshScene extends Scene {
 
     // Load Jump Animations (Preload)
     try {
-        const jumpGltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-jumps.glb');
+        const jumpGltf = await loadCachedGltf('./assets/characters/2025/flash-jumps.glb');
         if (jumpGltf.animations.length > 0) {
             this.jumpClips = jumpGltf.animations;
             console.log(`🦘 [FreshScene] Loaded ${this.jumpClips.length} Jump Animations`);
@@ -236,7 +288,7 @@ export default class FreshScene extends Scene {
 
     // Load Slide Animation (Preload)
     try {
-        const slideGltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-slide.glb');
+        const slideGltf = await loadCachedGltf('./assets/characters/2025/flash-slide.glb');
         if (slideGltf.animations.length > 0) {
             this.slideClip = slideGltf.animations[0];
             this.slideClip.name = 'slide';
@@ -248,7 +300,7 @@ export default class FreshScene extends Scene {
 
     // Load Crash Animation (Preload)
     try {
-        const crashGltf = await this.glbLoader.loadAsync('./assets/characters/2025/flash-crash.glb');
+        const crashGltf = await loadCachedGltf('./assets/characters/2025/flash-crash.glb');
         if (crashGltf.animations.length > 0) {
             this.crashClip = crashGltf.animations[0];
             this.crashClip.name = 'crash';
@@ -421,11 +473,11 @@ export default class FreshScene extends Scene {
     this.scores = 0;
     this.distance = 0;
     this.elapsedTime = 0;
-    (document.querySelector('.scores-count') as HTMLInputElement).innerHTML = '0';
-    const metersEl = document.getElementById('meters-display');
-    if (metersEl) metersEl.innerText = '0 M';
-    const timerEl = document.getElementById('timer-display');
-    if (timerEl) timerEl.innerText = '00:00';
+    this.cacheHudElements();
+    this.setScoreText('0');
+    this.setCoinsText('0');
+    this.setMetersText('0 M');
+    this.setTimerText('00:00');
     
     // Reset Position
     this.targetX = 0;
@@ -675,22 +727,18 @@ export default class FreshScene extends Scene {
 
       // Update Stats (Score & Distance)
       // Score logic from RunningScene: this.scores += Math.round(this.speed * this.delta);
-      this.scores += Math.round(this.speed * this.delta);
-      (document.querySelector('.scores-count') as HTMLInputElement).innerHTML = this.scores.toString();
+    this.scores += Math.round(this.speed * this.delta);
+    this.setScoreText(this.scores.toString());
 
       // Distance logic (30% of speed)
       this.distance += (this.speed * this.delta * 0.3); 
-      const metersEl = document.getElementById('meters-display');
-      if (metersEl) metersEl.innerText = `${Math.floor(this.distance)} M`;
+    this.setMetersText(`${Math.floor(this.distance)} M`);
 
       // Timer Logic
       this.elapsedTime += this.delta;
       const minutes = Math.floor(this.elapsedTime / 60);
       const seconds = Math.floor(this.elapsedTime % 60);
-      const timerEl = document.getElementById('timer-display');
-      if (timerEl) {
-          timerEl.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
+      this.setTimerText(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
 
       // Smooth Movement (Lerp)
       // Play Mode uses: this.player.position.x += moveAmount; where moveAmount = speed * delta * direction
@@ -768,8 +816,7 @@ export default class FreshScene extends Scene {
               const collected = this.obstacleManager.checkCoinCollisions(helper.box);
               if (collected > 0) {
                   this.coins += collected;
-                  const coinEl = document.querySelector('.coins-count');
-                  if (coinEl) coinEl.innerHTML = this.coins.toString();
+                  this.setCoinsText(this.coins.toString());
               }
           }
 
@@ -838,8 +885,8 @@ export default class FreshScene extends Scene {
                           this.speed = 220;
                           this.scores = 0;
                           this.coins = 0;
-                          (document.querySelector('.scores-count') as HTMLInputElement).innerHTML = '0';
-                          (document.querySelector('.coins-count') as HTMLInputElement).innerHTML = '0';
+                          this.setScoreText('0');
+                          this.setCoinsText('0');
                           this.distance = 0;
                           this.elapsedTime = 0;
                           this.animationSpeed = 1.2; // Reset to default

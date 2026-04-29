@@ -7,6 +7,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preload" href="./assets/models/textures/textures.json" as="fetch" crossorigin>
+  <link rel="preload" href="./assets/mainbackdrop.png" as="image">
+  <link rel="preload" href="./assets/models/textures/cyberpunk-metal-3.jpeg" as="image">
+  <link rel="preload" href="./assets/models/wooden-cave.fbx" as="fetch" crossorigin>
+  <link rel="preload" href="./assets/characters/2025/flash-idles.glb" as="fetch" crossorigin>
+  <link rel="preload" href="./assets/characters/2025/flash-sprint-2.glb" as="fetch" crossorigin>
+  <link rel="preload" href="./assets/characters/2025/flash-warm.glb" as="fetch" crossorigin>
   <link rel="stylesheet" href="./src/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
@@ -14,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <title>Artworx Runner - NEO FLASH 2189</title>
+  <title>Studio Foresighted Runner</title>
 </head>
 
 <body>
@@ -164,8 +171,9 @@
   <!-- Main menu  -->
   <section id="main-menu-buttons">
     <div class="neon-title-container">
-      <h1 class="loading-title"><span class="text-red">ARTWORX</span><span class="text-yellow">RUNNER</span></h1>
-      <p class="loading-subtitle" style="color: white;">NEO FLASH 2189</p>
+      <div class="loading-title title-cycle" aria-label="Studio Foresighted Runner title">
+        <img class="title-image title-image-static" src="./assets/game-title-2.png" alt="Studio Foresighted Runner title">
+      </div>
     </div>
     
     <!-- Texture Thumbnails -->
@@ -758,8 +766,9 @@
     <div class="corner-deco corner-br"></div>
 
     <div class="loading-content">
-      <h1 class="loading-title"><span class="text-red">ARTWORX</span><span class="text-yellow">RUNNER</span></h1>
-      <p class="loading-subtitle" style="color: white;">NEO FLASH 2189</p>
+      <div class="loading-title title-cycle" aria-label="Studio Foresighted Runner title">
+        <img class="title-image title-image-static" src="./assets/game-title-2.png" alt="Studio Foresighted Runner title">
+      </div>
       
       <div class="fresh-loading-text">ENTERING 2189</div>
 

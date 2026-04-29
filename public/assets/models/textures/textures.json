@@ -2,12 +2,12 @@
   "textures": [
     {
       "name": "Cyberpunk Metal 3",
-      "file": "cyberpunk-metal-3.jpeg",
-      "default": true
+      "file": "cyberpunk-metal-3.jpeg"
     },
     {
       "name": "Cyberpunk Metal 2",
-      "file": "cyberpunk-metal-2.jpeg"
+      "file": "cyberpunk-metal-2.jpeg",
+      "default": true
     },
     {
       "name": "Cyberpunk Metal",
