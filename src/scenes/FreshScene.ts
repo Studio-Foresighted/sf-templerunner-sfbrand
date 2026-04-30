@@ -161,7 +161,7 @@ export default class FreshScene extends Scene {
 
     this.loadingPromise = (async () => {
     this.updateLoading(5);
-    this.background = await loadCachedTexture('./assets/mainbackdrop.png', 1);
+    this.background = await loadCachedTexture('./assets/mainbackdrop-2.png', 1);
 
     // Load Obstacles
     this.obstacleManager.loadAssets(this.fbxLoader);

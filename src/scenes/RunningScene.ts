@@ -308,7 +308,7 @@ export default class RunningScene extends Scene {
 
     this.loadingPromise = (async () => {
     this.updateLoading(5);
-    this.background = await loadCachedTexture('./assets/mainbackdrop.png', 1);
+    this.background = await loadCachedTexture('./assets/mainbackdrop-2.png', 1);
 
     const cleanAnim = (group: any) => {
       if (group.animations && group.animations.length) {

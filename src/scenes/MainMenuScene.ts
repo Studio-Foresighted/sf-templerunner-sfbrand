@@ -134,7 +134,7 @@ export default class MainMenuScene extends Scene {
 
   async load() {
     this.updateLoading(5, 'INITIALIZING CORE');
-    this.background = await loadCachedTexture('./assets/mainbackdrop.png', 1);
+    this.background = await loadCachedTexture('./assets/mainbackdrop-2.png', 1);
 
     // Fetch textures for UI and selection
     const data = await getCachedJson<any>('./assets/models/textures/textures.json');

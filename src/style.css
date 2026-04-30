@@ -120,7 +120,7 @@ html, body {
   overflow: hidden;
   background:
     linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.28)),
-    url('/assets/mainbackdrop.png') center / cover no-repeat,
+    url('/assets/mainbackdrop-2.png') center / cover no-repeat,
     #000000;
 }
 
@@ -629,7 +629,7 @@ html, body {
   justify-content: center;
   background:
     linear-gradient(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.42)),
-    url('/assets/mainbackdrop.png') center / cover no-repeat,
+    url('/assets/mainbackdrop-2.png') center / cover no-repeat,
     #000000;
   z-index: 9999;
 }
